@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace CargoMover
 {
     public class Constants
@@ -10,5 +12,7 @@ namespace CargoMover
         public const float SearchRadius = 1f;
         public const float CargoRadius = 0.5f;
         public const float CargoSpaceRadius = 1.5f;
+
+        public static readonly Vector3 CargoHeight = Vector3.up * 1.5f;
     }
 }

@@ -16,11 +16,11 @@ namespace CargoMover
 
         private Joystick _joystick;
         private Transform _tr;
-        private bool _borrowed;
         private Cargo _cargo;
         private ulong _cargoId;
         private Vector2 _prevJoystick;
         private Placeholder _prevPlaceholder;
+        private bool _borrowed;
 
         public override void OnNetworkSpawn()
         {
@@ -120,7 +120,6 @@ namespace CargoMover
             }
 
             _borrowed = true;
-            // _cargoId = cargo.networkId;
             _cargo = cargo;
 
             ParentCargoToPlayerServerRpc(_cargo.NetworkObjectId);
@@ -129,12 +128,18 @@ namespace CargoMover
         [ServerRpc]
         private void ParentCargoToPlayerServerRpc(ulong cargoId)
         {
-            var cargoes = FindObjectsOfType<Cargo>();
-            var cargo = cargoes.FirstOrDefault(c => c.NetworkObjectId == cargoId);
-            if (cargo == null) return;
+            if (!GetCargo(cargoId, out var cargo)) return;
 
             cargo.NetworkObject.TrySetParent(gameObject);
-            cargo.transform.SetLocalPositionAndRotation(Vector3.up * 1.5f, Quaternion.identity);
+            cargo.transform.SetLocalPositionAndRotation(Constants.CargoHeight, Quaternion.identity);
+        }
+
+        private static bool GetCargo(ulong cargoId, out Cargo cargo)
+        {
+            var cargoes = FindObjectsOfType<Cargo>(); // todo: cache list of network objects
+
+            cargo = cargoes.FirstOrDefault(c => c.NetworkObjectId == cargoId);
+            return cargo != null;
         }
 
         private void TryPut()
@@ -157,9 +162,7 @@ namespace CargoMover
         [ServerRpc]
         private void UnparentCargoServerRpc(ulong cargoId, Vector3 position)
         {
-            var cargoes = FindObjectsOfType<Cargo>();
-            var cargo = cargoes.FirstOrDefault(no => no.NetworkObjectId == cargoId);
-            if (cargo == null) return;
+            if (!GetCargo(cargoId, out var cargo)) return;
 
             cargo.NetworkObject.TryRemoveParent();
             cargo.transform.SetPositionAndRotation(position, Quaternion.identity);
