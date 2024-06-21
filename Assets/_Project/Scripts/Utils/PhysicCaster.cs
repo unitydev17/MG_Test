@@ -94,7 +94,7 @@ namespace CargoMover
             {
                 if (col == null) continue;
                 var cargo = col.GetComponent<Cargo>();
-                if (cargo.restrictToMove) continue;
+                if (cargo.restrictToMove.Value) continue;
                 return cargo;
             }
 

@@ -28,7 +28,7 @@ namespace CargoMover
 
                 var position = exampleArea.GetPositionById(i);
                 var cargo = _cargoFactory.Create(position);
-                cargo.restrictToMove = true;
+                cargo.restrictToMove.Value = true;
                 counter++;
             }
 

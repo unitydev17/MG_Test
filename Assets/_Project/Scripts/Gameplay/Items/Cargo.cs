@@ -4,7 +4,7 @@ namespace CargoMover
 {
     public class Cargo : NetworkBehaviour
     {
-        public bool restrictToMove;
+        public NetworkVariable<bool> restrictToMove = new NetworkVariable<bool>();
         public Placeholder placeholder;
     }
 }
