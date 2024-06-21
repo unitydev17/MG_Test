@@ -12,7 +12,6 @@ namespace CargoMover
             _placeholders = transform.GetComponentsInChildren<Placeholder>();
         }
 
-
         public Vector3 GetPositionById(int id)
         {
             var placeholder = _placeholders.First(p => p.id == id);

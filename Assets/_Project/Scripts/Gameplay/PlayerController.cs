@@ -1,4 +1,3 @@
-using HelloWorld.Utils;
 using UnityEngine;
 using VContainer;
 
@@ -8,15 +7,14 @@ namespace CargoMover
     {
         [SerializeField] private Transform _touchPoint;
         [SerializeField] private float _speed;
+
         private Joystick _joystick;
-
         private Transform _tr;
-
         private bool _borrowed;
         private Cargo _cargo;
-
-        private Vector2 _joystickValue;
+        private Vector2 _prevJoystick;
         private PhysicCaster _physicCaster;
+        private Placeholder _prevPlaceholder;
 
 
         [Inject]
@@ -34,7 +32,7 @@ namespace CargoMover
         {
             _joystick = FindObjectOfType<Joystick>();
             _tr = transform;
-            _tr.SetLocalY(1);
+            // _tr.SetLocalY(1);
         }
 
         private void Update()
@@ -44,10 +42,11 @@ namespace CargoMover
             CheckBorrow();
         }
 
-        private Placeholder _prevPlaceholder;
 
         private void CheckPlaceholder()
         {
+            if (!_borrowed) return;
+            
             var found = _physicCaster.FindTouchedPlaceholder(_touchPoint, out var placeholder);
             if (found)
             {
@@ -66,18 +65,32 @@ namespace CargoMover
 
         private void Move()
         {
-            if (Vector2.Distance(_joystickValue, _joystick.Direction) < 0.1f) return;
+            if (Vector2.Distance(_prevJoystick, _joystick.Direction) < 0.1f) return;
 
+            var dt = Time.deltaTime;
             var position = _tr.position;
-            var direction = Vector3.forward * _joystick.Vertical + Vector3.right * _joystick.Horizontal;
-            var nextPos = position + direction * (_speed * Time.deltaTime);
+            var nextPos = position + Direction * (_speed * dt);
 
-            var canMove = _physicCaster.CanMove(nextPos, gameObject);
-            if (!canMove) nextPos = position;
+            if (!_physicCaster.CanMove(nextPos, gameObject))
+            {
+                nextPos = position + HorizontalDirection * (_speed * dt);
+                if (!_physicCaster.CanMove(nextPos, gameObject))
+                {
+                    nextPos = position + VerticalDirection * (_speed * dt);
+                    if (!_physicCaster.CanMove(nextPos, gameObject))
+                    {
+                        nextPos = position;
+                    }
+                }
+            }
 
             transform.position = nextPos;
-            transform.rotation = Quaternion.LookRotation(direction);
+            transform.rotation = Quaternion.LookRotation(Direction);
         }
+
+        private Vector3 Direction => Vector3.forward * _joystick.Vertical + Vector3.right * _joystick.Horizontal;
+        private Vector3 VerticalDirection => Vector3.forward * _joystick.Vertical;
+        private Vector3 HorizontalDirection => Vector3.right * _joystick.Horizontal;
 
         private void CheckBorrow()
         {
@@ -103,7 +116,7 @@ namespace CargoMover
                 _prevPlaceholder.restricted = true;
                 _cargo.placeholder = _prevPlaceholder;
             }
-            
+
             var position = canUsePlaceholder ? _prevPlaceholder.transform.position : _touchPoint.position;
             position.y = 1;
 
@@ -120,7 +133,7 @@ namespace CargoMover
                 cargo.placeholder.restricted = false;
                 cargo.placeholder = null;
             }
-            
+
             _borrowed = true;
             _cargo = cargo;
 
