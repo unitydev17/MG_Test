@@ -1,3 +1,4 @@
+using Unity.Netcode;
 using UnityEngine;
 
 namespace CargoMover
@@ -20,8 +21,11 @@ namespace CargoMover
 
         public Cargo Create()
         {
-            var go = Object.Instantiate(_prefab);
-            return go.GetComponent<Cargo>();
+            var instance = Object.Instantiate(_prefab);
+            var instanceNetworkObject = instance.GetComponent<NetworkObject>();
+            instanceNetworkObject.Spawn();
+
+            return instance.GetComponent<Cargo>();
         }
     }
 }

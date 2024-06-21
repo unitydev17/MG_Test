@@ -1,10 +1,16 @@
+using System;
+using System.Linq;
+using Unity.Netcode;
 using UnityEngine;
-using VContainer;
 
 namespace CargoMover
 {
-    public class PlayerController : MonoBehaviour
+    public class PlayerController : NetworkBehaviour
     {
+        public static event Func<Vector3, GameObject, bool> CanMove;
+        public static event Func<GameObject, Cargo> FindNearestCargo;
+        public static event Func<Transform, Placeholder> FindTouchedPlaceholder;
+
         [SerializeField] private Transform _touchPoint;
         [SerializeField] private float _speed;
 
@@ -12,18 +18,11 @@ namespace CargoMover
         private Transform _tr;
         private bool _borrowed;
         private Cargo _cargo;
+        private ulong _cargoId;
         private Vector2 _prevJoystick;
-        private PhysicCaster _physicCaster;
         private Placeholder _prevPlaceholder;
 
-
-        [Inject]
-        public void Construct(PhysicCaster physicCaster)
-        {
-            _physicCaster = physicCaster;
-        }
-
-        private void Awake()
+        public override void OnNetworkSpawn()
         {
             Initialize();
         }
@@ -32,11 +31,13 @@ namespace CargoMover
         {
             _joystick = FindObjectOfType<Joystick>();
             _tr = transform;
-            // _tr.SetLocalY(1);
+            _tr.SetLocalY(1);
         }
 
         private void Update()
         {
+            if (!IsOwner) return;
+
             Move();
             CheckPlaceholder();
             CheckBorrow();
@@ -46,9 +47,9 @@ namespace CargoMover
         private void CheckPlaceholder()
         {
             if (!_borrowed) return;
-            
-            var found = _physicCaster.FindTouchedPlaceholder(_touchPoint, out var placeholder);
-            if (found)
+            var placeholder = FindTouchedPlaceholder?.Invoke(_touchPoint);
+
+            if (placeholder != null)
             {
                 if (placeholder == _prevPlaceholder) return;
                 if (_prevPlaceholder != null) _prevPlaceholder.Reset();
@@ -71,13 +72,14 @@ namespace CargoMover
             var position = _tr.position;
             var nextPos = position + Direction * (_speed * dt);
 
-            if (!_physicCaster.CanMove(nextPos, gameObject))
+
+            if (CanMove?.Invoke(nextPos, gameObject) == false)
             {
                 nextPos = position + HorizontalDirection * (_speed * dt);
-                if (!_physicCaster.CanMove(nextPos, gameObject))
+                if (CanMove?.Invoke(nextPos, gameObject) == false)
                 {
                     nextPos = position + VerticalDirection * (_speed * dt);
-                    if (!_physicCaster.CanMove(nextPos, gameObject))
+                    if (CanMove?.Invoke(nextPos, gameObject) == false)
                     {
                         nextPos = position;
                     }
@@ -96,19 +98,48 @@ namespace CargoMover
         {
             if (!Input.GetKeyDown(KeyCode.Space)) return;
 
+            if (!IsOwner) return;
+
             if (_borrowed)
             {
-                Put();
+                TryPut();
                 return;
             }
 
-            Borrow();
+            TryBorrow();
         }
 
-        private void Put()
+        private void TryBorrow()
+        {
+            var cargo = FindNearestCargo?.Invoke(gameObject);
+            if (cargo == null) return;
+            if (cargo.placeholder != null)
+            {
+                cargo.placeholder.restricted = false;
+                cargo.placeholder = null;
+            }
+
+            _borrowed = true;
+            // _cargoId = cargo.networkId;
+            _cargo = cargo;
+
+            ParentCargoToPlayerServerRpc(_cargo.NetworkObjectId);
+        }
+
+        [ServerRpc]
+        private void ParentCargoToPlayerServerRpc(ulong cargoId)
+        {
+            var cargoes = FindObjectsOfType<Cargo>();
+            var cargo = cargoes.FirstOrDefault(c => c.NetworkObjectId == cargoId);
+            if (cargo == null) return;
+
+            cargo.NetworkObject.TrySetParent(gameObject);
+            cargo.transform.SetLocalPositionAndRotation(Vector3.up * 1.5f, Quaternion.identity);
+        }
+
+        private void TryPut()
         {
             _borrowed = false;
-            _cargo.transform.parent = null;
 
             var canUsePlaceholder = _prevPlaceholder != null && !_prevPlaceholder.restricted;
             if (canUsePlaceholder)
@@ -120,25 +151,18 @@ namespace CargoMover
             var position = canUsePlaceholder ? _prevPlaceholder.transform.position : _touchPoint.position;
             position.y = 1;
 
-            _cargo.transform.SetPositionAndRotation(position, Quaternion.identity);
+            UnparentCargoServerRpc(_cargo.NetworkObjectId, position);
         }
 
-        private void Borrow()
+        [ServerRpc]
+        private void UnparentCargoServerRpc(ulong cargoId, Vector3 position)
         {
-            var cargo = _physicCaster.FindNearestCargo(gameObject);
+            var cargoes = FindObjectsOfType<Cargo>();
+            var cargo = cargoes.FirstOrDefault(no => no.NetworkObjectId == cargoId);
             if (cargo == null) return;
 
-            if (cargo.placeholder != null)
-            {
-                cargo.placeholder.restricted = false;
-                cargo.placeholder = null;
-            }
-
-            _borrowed = true;
-            _cargo = cargo;
-
-            cargo.transform.parent = gameObject.transform;
-            cargo.transform.SetLocalPositionAndRotation(Vector3.up * 1.5f, Quaternion.identity);
+            cargo.NetworkObject.TryRemoveParent();
+            cargo.transform.SetPositionAndRotation(position, Quaternion.identity);
         }
     }
 }

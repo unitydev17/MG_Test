@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace HelloWorld.Utils
+namespace CargoMover
 {
     public static class Utils
     {

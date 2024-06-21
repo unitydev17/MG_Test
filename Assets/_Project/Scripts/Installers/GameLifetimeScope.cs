@@ -9,10 +9,8 @@ public class GameLifetimeScope : LifetimeScope
     
     protected override void Configure(IContainerBuilder builder)
     {
-        builder.RegisterComponentInHierarchy<Gameplay>();
-        builder.RegisterComponentInHierarchy<PlayerController>();
+        builder.RegisterComponentInHierarchy<GameManager>();
         builder.Register<LevelBuilder>(Lifetime.Scoped);
-
         builder.Register<PhysicCaster>(Lifetime.Scoped).AsImplementedInterfaces().AsSelf();
 
         RegisterFactories(builder);

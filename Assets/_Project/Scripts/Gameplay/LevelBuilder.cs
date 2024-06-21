@@ -20,6 +20,9 @@ namespace CargoMover
         private int BuildExampleArea(int value, PlayArea exampleArea)
         {
             var places = LevelGenerator.ToBinary(value);
+
+            places = "000000001"; // todo: remove
+            
             var counter = 0;
             for (var i = 0; i < places.Length; i++)
             {

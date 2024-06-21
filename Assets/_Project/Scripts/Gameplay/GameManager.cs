@@ -2,10 +2,9 @@ using CargoMover;
 using UnityEngine;
 using VContainer;
 
-public class Gameplay : MonoBehaviour
+public class GameManager : MonoBehaviour
 {
     [SerializeField] private PlayArea _exampleArea;
-    [SerializeField] private PlayArea _playArea;
     [SerializeField] private Transform _storePoint;
 
 
@@ -18,7 +17,17 @@ public class Gameplay : MonoBehaviour
         _levelBuilder = levelBuilder;
     }
 
-    private void Start()
+    private void OnEnable()
+    {
+        NetworkUI.OnStart += StartLevel;
+    }
+
+    private void OnDisable()
+    {
+        NetworkUI.OnStart -= StartLevel;
+    }
+
+    private void StartLevel()
     {
         _level = LevelGenerator.GenerateLevel();
         _levelBuilder.BuildLevel(_level, _exampleArea, _storePoint);

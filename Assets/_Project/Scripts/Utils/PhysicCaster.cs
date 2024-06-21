@@ -1,10 +1,10 @@
-using HelloWorld.Utils;
+using System;
 using UnityEngine;
 using VContainer.Unity;
 
 namespace CargoMover
 {
-    public class PhysicCaster : IInitializable
+    public class PhysicCaster : IInitializable, IDisposable
     {
         private Collider[] _colliders;
         private int _placeholderMask;
@@ -15,8 +15,24 @@ namespace CargoMover
         {
             CreateMasks();
             _colliders = new Collider[10];
+
+            PlayerController.CanMove += CanMove;
+            PlayerController.FindNearestCargo += FindNearestCargo;
+            PlayerController.FindTouchedPlaceholder += FindPlaceholder;
         }
 
+        public void Dispose()
+        {
+            PlayerController.CanMove -= CanMove;
+            PlayerController.FindNearestCargo -= FindNearestCargo;
+            PlayerController.FindTouchedPlaceholder -= FindPlaceholder;
+        }
+
+        private Placeholder FindPlaceholder(Transform transform)
+        {
+            FindTouchedPlaceholder(transform, out var placeholder);
+            return placeholder;
+        }
 
         private void CreateMasks()
         {
@@ -25,7 +41,7 @@ namespace CargoMover
             _cargoMask = LayerMask.GetMask(Constants.Cargo_Layer);
         }
 
-        public bool FindTouchedPlaceholder(Transform touchPoint, out Placeholder placeholder)
+        private bool FindTouchedPlaceholder(Transform touchPoint, out Placeholder placeholder)
         {
             _colliders.Clean();
             var pos = touchPoint.position;
@@ -38,7 +54,7 @@ namespace CargoMover
                     if (col == null) continue;
                     var ph = col.GetComponent<Placeholder>();
                     if (ph.restricted) continue;
-                    
+
                     placeholder = ph;
                     return true;
                 }
@@ -48,7 +64,7 @@ namespace CargoMover
             return false;
         }
 
-        public bool CanMove(Vector3 nextPos, GameObject playerObject)
+        private bool CanMove(Vector3 nextPos, GameObject playerObject)
         {
             _colliders.Clean();
 
@@ -65,7 +81,7 @@ namespace CargoMover
             return true;
         }
 
-        public Cargo FindNearestCargo(GameObject playerObject)
+        private Cargo FindNearestCargo(GameObject playerObject)
         {
             _colliders.Clean();
             var pos = playerObject.transform.position;

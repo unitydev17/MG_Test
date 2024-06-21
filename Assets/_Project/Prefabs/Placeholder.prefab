@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 5601225470832389589}
   - component: {fileID: 7429535028304511956}
   - component: {fileID: 4541229008310754250}
+  - component: {fileID: 9117340421862050905}
   m_Layer: 7
   m_Name: Placeholder
   m_TagString: Untagged
@@ -340,3 +341,25 @@ MonoBehaviour:
   _baseColor: {r: 1, g: 1, b: 1, a: 1}
   _markedColor: {r: 0.45058736, g: 0.7924528, b: 0.42986828, a: 1}
   id: 0
+  restricted: 0
+--- !u!114 &9117340421862050905
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4340415164716876803}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 0
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
